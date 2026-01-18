@@ -46,6 +46,8 @@ it might fail. Known issue, low priority until it bugs me enough to change.
 
 - The Python version in .github/workflows/release.yaml. This might be fine, since it's just for the packager, but if
   you run into problems and you're making something for a newer version of Python, give it a look.
+- If GitHub Actions doesn't show any Actions, you might need to make a minor edit to the two .yaml files in the
+  `.github/workflows` directory -- just add a newline at the end or something-- to wake GitHub Actions up.
 
 ## Inevitable Disclaimer
 

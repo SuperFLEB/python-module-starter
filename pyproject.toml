@@ -17,7 +17,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 readme = "README.md"
-license = "UNLICENSED"
+license = "LicenseRef-Custom-License"
 license-files = ["LICENSE"]
 
 [project.urls]
