@@ -1,0 +1,51 @@
+name: "Release"
+on: [ workflow_dispatch ]
+jobs:
+  build-and-release:
+    name: Build and Release
+    permissions:
+      contents: write
+      id-token: write
+      pages: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: If testing with Act, dummy in "gh"
+        if: ${{ env.ACT }}
+        run: echo -e "echo Right now I would be running \"gh \$@\"" > /usr/local/bin/gh ; chmod +x /usr/local/bin/gh
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - name: Get/set version tag
+        run: git tag && chmod u+x .github/scripts/get_set_version_tag && VERSION=$(.github/scripts/get_set_version_tag) && echo "VERSION=$VERSION" >> $GITHUB_ENV
+      - name: Push tags (unless testing with Act)
+        if: ${{ !env.ACT }}
+        run: git push origin --tags
+      - name: Write version
+        run: echo "Write $VERSION to VERSION file" ; echo "$VERSION" > VERSION
+      - name: Build
+        run: python -m pip install --upgrade pip setuptools wheel build ; python -m build -w
+      - name: Create Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create --generate-notes --repo="$GITHUB_REPOSITORY" --title="v$VERSION" "v$VERSION" ;
+          gh release upload --clobber "v$VERSION" dist/*.whl
+      - name: Generate pip repository
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python .github/scripts/write_repo.py
+      - name: Upload pip repository artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+            path: './dist_html'
+      - name: Deploy pip repository to GitHub Pages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        id: deployment
+        uses: actions/deploy-pages@v4

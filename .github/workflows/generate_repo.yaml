@@ -1,0 +1,32 @@
+name: "Generate pip Repository"
+on: [ workflow_dispatch ]
+jobs:
+  generate_repo:
+    name: Generate pip repository
+    permissions:
+      id-token: write
+      pages: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - name: Generate pip repository
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release list --json name,tagName ; python .github/scripts/write_repo.py
+      - name: Upload pip repository artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+            path: './dist_html'
+      - name: Deploy pip repository to GitHub Pages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        id: deployment
+        uses: actions/deploy-pages@v4
