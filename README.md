@@ -15,7 +15,10 @@ MIT-0 licensed. Do whatever you want, just don't blame me if it all ends in tear
 ## How you use it
 - Clone this repo as the starting point for your own project. (Be sure to wipe the .git directory.)
 - Do your thing.
-- When you've got a version, tag it with a v-prefixed Semver format, like "vX.Y.Z".
+- When you've got a version, tag it with a v-prefixed Semver version number.
+  ```shell
+  git tag v0.1.0
+  ```
 - Before you run the actions, be sure GitHub Pages is enabled on the repo and set to "GitHub Actions".
 - When you've got a releasable version you're happy with, there are two GitHub Actions that will help you:
   1. The `Release` action will build a wheel package, create a Release, and publish all existing releases to the repo's
