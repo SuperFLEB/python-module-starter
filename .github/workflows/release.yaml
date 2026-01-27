@@ -1,5 +1,32 @@
 name: "Release"
-on: [ workflow_dispatch ]
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        type: string
+        required: false
+        description: "Specific version (overrides both options below)"
+      version_bump:
+        type: choice
+        required: true
+        description: "Increment last version"
+        default: 'none'
+        options:
+          - none
+          - patch
+          - minor
+          - major
+      label_bump:
+        type: choice
+        required: true
+        description: "Set/increment label"
+        default: 'none'
+        options:
+          - none
+          - pre
+          - rc
+          - alpha
+          - beta
 jobs:
   build-and-release:
     name: Build and Release
@@ -11,7 +38,7 @@ jobs:
     steps:
       - name: If testing with Act, dummy in "gh"
         if: ${{ env.ACT }}
-        run: echo -e "echo Right now I would be running \"gh \$@\"" > /usr/local/bin/gh ; chmod +x /usr/local/bin/gh
+        run: echo -e "#!/usr/bin/env bash\necho Right now I would be running \"gh \$@\"" > /usr/local/bin/gh ; chmod +x /usr/local/bin/gh
       - name: Checkout
         uses: actions/checkout@v6
         with:
@@ -21,25 +48,31 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.11"
-      - name: Get/set version tag
-        run: git tag && chmod u+x .github/scripts/get_set_version_tag && VERSION=$(.github/scripts/get_set_version_tag) && echo "VERSION=$VERSION" >> $GITHUB_ENV
-      - name: Push tags (unless testing with Act)
-        if: ${{ !env.ACT }}
-        run: git push origin --tags
-      - name: Write version
-        run: echo "Write $VERSION to VERSION file" ; echo "$VERSION" > VERSION
+      - name: Install build dependencies
+        run: pip install -r buildscript/requirements.d/build.txt -r buildscript/requirements.d/write_repo.txt
+      - name: Get Next Version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EXPLICIT_VERSION: ${{ github.event.inputs.version }}
+          VERSION_BUMP: ${{ github.event.inputs.version_bump }}
+          LABEL_BUMP: ${{ github.event.inputs.label_bump }}
+        run: echo "BUILD_VERSION=$(python buildscript/next_version.py)" >> $GITHUB_ENV
       - name: Build
-        run: python -m pip install --upgrade pip setuptools wheel build ; python -m build -w
-      - name: Create Release
+        run: python -m build -s -w
+      - name: Verify that there are actually Python files in the wheel
+        run: test -n "$(find dist -name *.whl -exec sh -c 'unzip -l {} | grep -q \\.py$' \; -print)"
+      - name: Tag Release
+        run: git tag "v$BUILD_VERSION" && git push origin "v$BUILD_VERSION"
+      - name: Make GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BUILD_VERSION: ${{ env.BUILD_VERSION }}
         run: |
-          gh release create --generate-notes --repo="$GITHUB_REPOSITORY" --title="v$VERSION" "v$VERSION" ;
-          gh release upload --clobber "v$VERSION" dist/*.whl
-      - name: Generate pip repository
+          gh release create --generate-notes --repo="$GITHUB_REPOSITORY" --title="v$BUILD_VERSION" "v$BUILD_VERSION" dist/*.whl dist/*.tar.gz
+      - name: Publish locally
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python .github/scripts/write_repo.py
+        run: python buildscript/write_repo.py
       - name: Upload pip repository artifact
         uses: actions/upload-pages-artifact@v3
         with:
@@ -48,5 +81,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         id: deployment
-
         uses: actions/deploy-pages@v4

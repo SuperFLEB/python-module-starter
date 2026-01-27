@@ -1,30 +1,36 @@
 [build-system]
-requires = ["setuptools >= 80.0.0"]
-build-backend = "setuptools.build_meta"
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
 
 [project]
 dynamic = ["version"]
-name = "yournamespace.yourpackage"
-keywords = ["template", "dummy", "forgot-to-change-the-config"]
+name = "fleb-starter"
+keywords = ["template", "starter", "python", "project", "bootstrap"]
 authors = [
-  { name="Your Name Here", email="nobody@example.com" },
+  { name="FLEB (a.k.a. SuperFLEB)" },
 ]
-description = "A Module, based on the Python+GitHub Actions Installable Module Starter"
-requires-python = ">=3.11"
+description = "Python Project Starter"
+requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
     "Environment :: Console",
     "Operating System :: OS Independent",
 ]
 readme = "README.md"
-license = "LicenseRef-Custom-License"
+license = "MIT-0"
 license-files = ["LICENSE"]
 
 [project.urls]
-# Homepage = "https://github.com/.../..."
-# Source = "https://github.com/.../..."
-# Issues = "https://github.com/.../.../issues"
-# Author = "https://..."
+Homepage = "https://github.com/SuperFLEB/python-starter"
+Source = "https://github.com/SuperFLEB/python-starter"
+Issues = "https://github.com/SuperFLEB/python-starter/issues"
+Author = "https://flebsite.com"
 
-[tool.setuptools.dynamic]
-version = {file = "VERSION"}
+[tool.pdm.build]
+package-dir = "src"
+includes = ["src/fleb"]
+custom-hook = "pdm_build.py"
+
+[tool.pdm.version]
+source = "call"
+getter = "buildscript.util.version:get_version()"

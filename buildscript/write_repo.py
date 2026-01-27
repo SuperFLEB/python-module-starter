@@ -2,7 +2,13 @@ import json
 import os
 import re
 import subprocess as sp
-import tomllib
+
+try:
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib
+
+ACT = os.environ.get("ACT") or None
 
 project_info_cache = None
 releases_info_cache = None
@@ -20,7 +26,7 @@ def get_releases_info():
     if releases_info_cache is not None:
         return releases_info_cache
 
-    releases_list_json = sp.check_output(["gh", "release", "list", "--json", "tagName"])
+    releases_list_json = sp.check_output(["gh", "release", "list", "--json", "tagName"]) if ACT is None else '[]'
     releases_list = json.loads(releases_list_json)
 
     releases = []
@@ -28,7 +34,7 @@ def get_releases_info():
     for release in releases_list:
         if not release["tagName"].startswith("v"):
             continue
-        release_data_json = sp.check_output(["gh", "release", "view", release["tagName"], "--json", "name,assets"])
+        release_data_json = sp.check_output(["gh", "release", "view", release["tagName"], "--json", "name,assets"]) if ACT is None else '[]'
         release_data = json.loads(release_data_json)
         wheels = [asset for asset in release_data["assets"] if "url" in asset and asset["url"].endswith('.whl')]
         releases.append({"tag": release["tagName"], "wheels": wheels})
@@ -36,9 +42,12 @@ def get_releases_info():
     releases_info_cache = releases
     return releases_info_cache
 
+
+releases_info = get_releases_info()
 lis = "\n".join(
-    [f"\t\t<li><a href=\"{r['wheels'][0]['url']}\">{r['wheels'][0]['name']}</a></li>" for r in get_releases_info()]
+    [f"\t\t<li><a href=\"{r['wheels'][0]['url']}\">{r['wheels'][0]['name']}</a></li>" for r in releases_info]
 )
+
 def get_release_ul():
     return f"\t<ul>\n{lis}\t\n\t</ul>"
 

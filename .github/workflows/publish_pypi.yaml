@@ -1,0 +1,51 @@
+name: "Publish to PyPI"
+on:
+  workflow_dispatch:
+    inputs:
+      repository:
+        type: choice
+        required: true
+        description: "Publish to..."
+        default: 'none'
+        options:
+          - testpypi
+          - pypi
+jobs:
+  pypi-publish:
+    name: Publish to PyPI
+    permissions:
+      contents: write
+      id-token: write
+      pages: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: If testing with Act, dummy in "gh"
+        if: ${{ env.ACT }}
+        run: echo -e "#!/usr/bin/env bash\necho Right now I would be running \"gh \$@\"" > /usr/local/bin/gh ; chmod +x /usr/local/bin/gh
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Ensure that this is running against a release branch
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+        run: if ! git describe --exact-match --tags | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-\S+)?$'; then echo "This must be run from a tag named as a release (vXX.XX.XX-xxxxx)" ; false ; fi
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - name: Install build dependencies
+        run: pip install -r buildscript/requirements.d/pypi.txt
+      - name: Get release files
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+        run: gh release download --dir dist --pattern *.whl --pattern *.tar.gz
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets[format('PYPI_TOKEN_{0}', github.event.inputs.repository)] }}
+          TWINE_REPOSITORY: ${{ github.event.inputs.repository }}
+          TWINE_NON_INTERACTIVE: 1
+        run: twine upload dist/*

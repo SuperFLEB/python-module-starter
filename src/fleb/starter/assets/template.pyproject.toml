@@ -1,0 +1,35 @@
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[project]
+dynamic = ["version"]
+name = ""
+keywords = []
+authors = [
+  { name="", email="" },
+]
+description = ""
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Environment :: Console",
+    "Operating System :: OS Independent",
+]
+readme = "README.md"
+license = "SEE-LICENSE"
+license-files = ["LICENSE"]
+
+[project.urls]
+Homepage = ""
+Source = ""
+Issues = ""
+Author = ""
+
+[tool.pdm.build]
+package-dir = "src"
+includes = ["src"]
+
+[tool.pdm.version]
+source = "call"
+getter = "buildscript.util.version:get_version()"

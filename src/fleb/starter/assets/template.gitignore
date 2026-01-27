@@ -1,7 +1,5 @@
-# Application-specific
-
-# These are generated at build time and should not be committed
-src/fleb/starter/assets/copy
+# Python Starter Kit
+.env.my_info
 
 # PyCharm
 .idea
